@@ -716,8 +716,121 @@ Other JSON types, however, are not allowed with `--form` or `--multipart`.
 
 ### Nested JSON fields
 
-Nested JSON fields can be set with both data field (`=`) and raw JSON field(`:=`) separators, which allows you to embed arbitrary JSON data into the resulting JSON object.
-HTTPie supports the [JSON form](https://www.w3.org/TR/html-json-forms/) syntax.
+For creating nested JSON structures, you can simply declare the path for the object's new destination
+and HTTPie will interpret it according to the [JSON form](https://www.w3.org/TR/html-json-forms/)
+notation and create your object. It works directly with the existing data field (`=`) and raw JSON
+field (`:=`) operators.
+
+#### Path Declaration
+
+A simple path can be a shallow key, e.g `type=success` => `{"type": "success"}`, as
+well as a nested one, e.g `result[type]=success` => `{"result": {"type": "success"}}`.
+
+The declaration also supports creating arrays; which can be either done by simply
+assigning the same path multiple times, e.g `ids:=1 ids:=2` => `{"ids": [1, 2]}`,
+or using the `[]` suffix, e.g `ids[]=1` => `{"ids": [1]}`.
+
+You can also use indexes to set items on an array, e.g `items[0]=terminal items[1]=desktop` =>
+`{"items": ["terminal", "desktop"]}`. If you don't set value for the indexes between, then
+those will be nullified, e.g `items[1]=terminal items[3]=desktop` => `{"items": [null, "terminal", null, "desktop"]}`.
+It is permitted to mix index-access with append actions (`[]`), but be aware that appends will not fill the voids but
+instead they will append after the last item, e.g `items[1]=terminal items[3]=desktop items[]=web` =>
+`{"items": [null, "terminal", null, "desktop", "web"]}`.
+
+> For creating a top-level list object, use `[]=`/`[]:=` format, e.g `[]:=1 `[]:=2` => `[1, 2]`.
+
+#### Examples
+
+Starting with a simple JSON object with 2 shallow keys.
+
+```bash
+$ http --offline --print=B pie.dev/post name=python version:=3
+```
+
+```json
+{
+    "name": "python",
+    "version": 3
+}
+```
+
+Let's add a nested object to denote current date.
+
+```bash
+$ http --offline --print=B pie.dev/post name=python version:=3 \
+  date[year]:=2021 date[month]=December
+```
+
+```json
+{
+    "date": {
+        "month": "December",
+        "year": 2021
+    },
+    "name": "python",
+    "version": 3
+}
+```
+
+And continue with adding a list of supported systems.
+
+```bash
+$ http --offline --print=B pie.dev/post name=python version:=3 \
+  date[year]:=2021 date[month]=December \
+  systems=Linux systems=Mac systems=Windows
+```
+
+```json
+{
+    "date": {
+        "month": "December",
+        "year": 2021
+    },
+    "name": "python",
+    "systems": [
+        "Linux",
+        "Mac",
+        "Windows"
+    ],
+    "version": 3
+}
+```
+
+Finally let's try out the sparse arrays for putting known ids.
+```bash
+$ http --offline --print=B pie.dev/post name=python version:=3 \
+  date[year]:=2021 date[month]=December \
+  systems=Linux systems=Mac systems=Windows \
+  people[known_ids][1]=1000 people[known_ids][5]=5000
+```
+
+```json
+{
+    "date": {
+        "month": "December",
+        "year": 2021
+    },
+    "name": "python",
+    "people": {
+        "known_ids": [
+            null,
+            "1000",
+            null,
+            null,
+            null,
+            "5000"
+        ]
+    },
+    "systems": [
+        "Linux",
+        "Mac",
+        "Windows"
+    ],
+    "version": 3
+}
+```
+
+And here is an even more comprehensive example to show all features.
 
 ```bash
 $ http PUT pie.dev/put \

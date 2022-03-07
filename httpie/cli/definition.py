@@ -5,8 +5,8 @@ from argparse import FileType
 
 from httpie import __doc__, __version__
 from httpie.cli.argtypes import (KeyValueArgType, SessionNameValidator,
-                                 readable_file_arg, response_charset_type,
-                                 response_mime_type)
+                                 SSLCredentials, readable_file_arg,
+                                 response_charset_type, response_mime_type)
 from httpie.cli.constants import (BASE_OUTPUT_OPTIONS, DEFAULT_FORMAT_OPTIONS,
                                   OUT_REQ_BODY, OUT_REQ_HEAD, OUT_RESP_BODY,
                                   OUT_RESP_HEAD, OUT_RESP_META, OUTPUT_OPTIONS,
@@ -29,13 +29,11 @@ options = ParserSpec(
     epilog="""
     For every --OPTION there is also a --no-OPTION that reverts OPTION
     to its default value.
-
     Suggestions and bug reports are greatly appreciated:
-
         https://github.com/httpie/httpie/issues
-
     """,
 )
+
 
 #######################################################################
 # Positional arguments.
@@ -807,6 +805,17 @@ ssl.add_argument(
     certificate file does not contain the private key.
 
     """,
+)
+
+ssl.add_argument(
+    '--cert-key-pass',
+    default=None,
+    type=SSLCredentials,
+    help='''
+    The passphrase to be used to with the given private key. Only needed if --cert-key
+    is given and the key file requires a passphrase.
+    If not provided, you’ll be prompted interactively.
+    '''
 )
 
 #######################################################################
